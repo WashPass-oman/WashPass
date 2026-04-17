@@ -275,6 +275,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
         <button class="ab abo abs" onclick="showLock()">Sign out</button>
       </div>
       <div class="adm-body">
+        <div class="sec">
+  <div class="sec-t">System settings</div>
+  <div class="lrow">
+    <input id="maxCarsInput" type="number" placeholder="Max cars" />
+    <button class="ab abk" onclick="updateMaxCars()">Save</button>
+  </div>
+  <div id="max-ok" class="alert aok" style="margin-top:10px;margin-bottom:0"></div>
+</div>
         <div class="mets fu" id="mets"></div>
 
         <div class="sec fu fu1">
@@ -319,7 +327,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);m
 </div>
 
 <script>
-const PASS='washpass2024',MAX=10;
+const PASS='washpass2024'; let MAX = parseInt(localStorage.getItem('wp:max') || '10');
 const ls=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const lg=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
 const cars=()=>lg('wp:c',[]);
@@ -465,6 +473,9 @@ function renderDash(){
         <span class="badge ${sc}" style="font-size:11px"><span class="badge-dot"></span>${sl}</span>
         ${car.status!=='active'?`<button class="ab abo abs" onclick="setCar('${car.plate}','active')">Activate</button>`:''}
         ${car.status==='active'?`<button class="ab abo abs" onclick="setCar('${car.plate}','paused')">Pause</button>`:''}
+        <button class="ab abo abs" onclick="deleteCar('${car.plate}')" style="color:#b00020;border-color:#b00020">
+  Delete
+</button>
       </div>
     </div>`;
   }).join('');
@@ -472,7 +483,9 @@ function renderDash(){
     <span class="plate-tag">${w.plate}</span>
     <span style="flex:1;color:var(--ink2);padding:0 8px">${w.note||'—'}${w.auto?' <span class="auto-pill">auto</span>':''}</span>
     <span style="color:var(--ink3);font-size:12px;white-space:nowrap">${fdt(w.at)}</span>
-  </div>`).join('');
+  <button class="ab abo abs" onclick="deleteWash(${i})" style="color:#b00020;border-color:#b00020">
+  Delete
+</button></div>`).join('');
 }
 
 function doLog(){
@@ -494,7 +507,42 @@ function setCar(plate,status){
   if(c)c.status=status;
   saveCars(list);renderDash();
 }
+function updateMaxCars(){
+  const val = parseInt(el('maxCarsInput').value);
+  if(!val || val < 1) return;
 
+  localStorage.setItem('wp:max', val);
+  MAX = val;
+
+  const ok = el('max-ok');
+  ok.textContent = 'Max cars updated';
+  ok.style.display = 'block';
+  setTimeout(()=> ok.style.display='none', 2000);
+
+  renderDash();
+}
+
+function deleteCar(plate){
+  if(!confirm('Delete this car and all its washes?')) return;
+
+  const newCars = cars().filter(c => c.plate !== plate);
+  const newWashes = washes().filter(w => w.plate !== plate);
+
+  saveCars(newCars);
+  saveWashes(newWashes);
+
+  renderDash();
+}
+
+function deleteWash(index){
+  if(!confirm('Delete this wash log?')) return;
+
+  const ws = washes();
+  ws.splice(index,1);
+
+  saveWashes(ws);
+  renderDash();
+}
 function copyLink(){
   navigator.clipboard.writeText(el('ci-url').value).then(()=>{
     const ok=el('cp-ok');ok.textContent='Copied to clipboard';ok.style.display='block';
